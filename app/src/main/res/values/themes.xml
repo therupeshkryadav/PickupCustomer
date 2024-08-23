@@ -1,0 +1,34 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Base.Theme.PickUpCustomer" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Base colors -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>
+
+    <color name="colorPrimary">#000000</color>
+    <color name="colorPrimaryDark">#CCCCCC</color>
+    <color name="colorAccent">#FFFFFF</color>
+
+    <style name="Theme.PickUpCustomer" parent="Base.Theme.PickUpCustomer" />
+
+    <style name="Theme.PickUpCustomer.NoActionBar">
+        <item name="titleEnabled">false</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.PickUpCustomer.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar">
+        <item name="colorOnPrimary">@color/colorAccent</item>
+    </style>
+
+    <style name="Theme.PickUpCustomer.PopupOverlay" parent="ThemeOverlay.Material3.Light">
+        <item name="colorOnSurface">@color/colorAccent</item>
+    </style>
+
+</resources>

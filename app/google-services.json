@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "867206801872",
+    "firebase_url": "https://peakers-0007-default-rtdb.firebaseio.com",
+    "project_id": "peakers-0007",
+    "storage_bucket": "peakers-0007.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867206801872:android:77eaaf03d6b9a3829af1d5",
+        "android_client_info": {
+          "package_name": "com.bussiness.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJJEOK4kMZyCng4eV474MgtOETAVaP3-A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867206801872:android:f586df2950d5a7a69af1d5",
+        "android_client_info": {
+          "package_name": "com.bussiness.pickup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJJEOK4kMZyCng4eV474MgtOETAVaP3-A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867206801872:android:d9c79c3147356f529af1d5",
+        "android_client_info": {
+          "package_name": "com.bussiness.pickup_customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJJEOK4kMZyCng4eV474MgtOETAVaP3-A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
