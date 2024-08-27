@@ -12,6 +12,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.bussiness.pickup.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.R
+import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
 
 object CustomerCommon {
     // Use safe calls to avoid NullPointerException
@@ -60,6 +61,8 @@ object CustomerCommon {
 
     }
 
+    val ridersFound: HashSet<RiderGeoModel>()
+    val RIDER_LOCATION_REFERENCE: String= "DriversLocation"
     val NOTI_BODY: String = "body"
     val NOTI_TITLE: String = "title"
 
@@ -67,5 +70,4 @@ object CustomerCommon {
 
     var currentUser: CustomerInfoModel?= null
     val CUSTOMER_INFO_REFERENCE: String="CustomersInfo"
-    val CUSTOMER_LOCATION_REFERENCE: String = "CustomersLocation"
 }

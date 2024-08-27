@@ -4,6 +4,9 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.content.res.Resources
+import android.location.Address
+import android.location.Geocoder
+import android.location.Location
 import android.os.Bundle
 import android.os.Looper
 import android.util.Log
@@ -16,11 +19,16 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.bussiness.pickup_customer.R
+import com.bussiness.pickup_customer.customerStack.Callback.FirebaseFailedListener
+import com.bussiness.pickup_customer.customerStack.Callback.FirebaseRiderInfoListener
 import com.bussiness.pickup_customer.customerStack.CustomerCommon
 import com.bussiness.pickup_customer.customerStack.CustomerLoginActivity
+import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
 import com.bussiness.pickup_customer.databinding.FragmentHomeCustomerBinding
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
+import com.firebase.geofire.GeoQuery
+import com.firebase.geofire.GeoQueryEventListener
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -35,16 +43,21 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.FirebaseStorage
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
+import java.io.IOException
+import java.util.Locale
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -57,23 +70,19 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
-    //Online System
-    private lateinit var onlineRef:DatabaseReference
-    private lateinit var currentUserRef:DatabaseReference
-    private lateinit var driverLocationRef:DatabaseReference
-    private lateinit var geofire: GeoFire
+    //Load Riders
+    var distance = 1.0
+    val LIMIT_RANGE = 10.0
+    var previousLocation: Location?= null
+    var currentLocation:Location?= null
 
-    private val onlineEventListener = object:ValueEventListener{
-        override fun onDataChange(snapshot: DataSnapshot) {
-            if(snapshot.exists())
-                currentUserRef.onDisconnect().removeValue()
-        }
+    var firstTime = true
 
-        override fun onCancelled(error: DatabaseError) {
-            Snackbar.make(mapFragment.requireView(),error.message,Snackbar.LENGTH_LONG).show()
-        }
+    //Listener
+    lateinit var iFirebaseRiderInfoListener: FirebaseRiderInfoListener
+    lateinit var iFirebaseFailedListener: FirebaseFailedListener
 
-    }
+    var cityName = ""
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -82,19 +91,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     override fun onDestroy() {
         super.onDestroy()
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-        FirebaseAuth.getInstance().currentUser?.let { user ->
-            geofire.removeLocation(user.uid)
-        }
-        onlineRef.removeEventListener(onlineEventListener)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        registerOnlineSystem()
-    }
-
-    private fun registerOnlineSystem() {
-        onlineRef.addValueEventListener(onlineEventListener)
     }
 
     override fun onCreateView(
@@ -114,18 +110,115 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         return root
     }
 
+    private fun loadAvailableRiders() {
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Snackbar.make(requireView(),getString(R.string.permission_require),Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        fusedLocationProviderClient.lastLocation
+            .addOnFailureListener { e->
+                Snackbar.make(requireView(),e.message!!,Snackbar.LENGTH_SHORT).show()
+            }
+            .addOnSuccessListener { location->
+                //Load all riders in city
+                val geocoder = Geocoder(requireContext(), Locale.getDefault())
+                var addressList = List<Address>()
+                try {
+                    addressList = geocoder.getFromLocation(location.latitude,location.longitude,1)!!
+                    cityName= addressList[0].locality
+
+                    //Query
+                    val rider_location_ref = FirebaseDatabase.getInstance()
+                        .getReference(CustomerCommon.RIDER_LOCATION_REFERENCE)
+                        .child(cityName)
+                    val gf=GeoFire(rider_location_ref)
+                    val geoQuery = gf.queryAtLocation(GeoLocation(location.latitude,location.longitude),distance)
+                    geoQuery.removeAllListeners()
+
+                    geoQuery.addGeoQueryEventListener(object:GeoQueryEventListener{
+                        override fun onKeyEntered(key: String?, location: GeoLocation?) {
+                           CustomerCommon.ridersFound.add(RiderGeoModel(key!!,location!!))
+                        }
+
+                        override fun onKeyExited(key: String?) {
+
+                        }
+
+                        override fun onKeyMoved(key: String?, location: GeoLocation?) {
+
+                        }
+
+                        override fun onGeoQueryReady() {
+                            if (distance <= LIMIT_RANGE)
+                            {
+                                distance++
+                                loadAvailableRiders()
+                            }
+                            else{
+                                distance = 0
+                                addRiderMarker()
+                            }
+                        }
+
+                        override fun onGeoQueryError(error: DatabaseError?) {
+                            Snackbar.make(requireView(),error!!.message,Snackbar.LENGTH_SHORT).show()
+                        }
+
+                    })
+
+                    rider_location_ref.addChildEventListener(object:ChildEventListener{
+                        override fun onChildAdded(
+                            snapshot: DataSnapshot,
+                            previousChildName: String?
+                        ) {
+
+                        }
+
+                        override fun onChildChanged(
+                            snapshot: DataSnapshot,
+                            previousChildName: String?
+                        ) {
+
+                        }
+
+                        override fun onChildRemoved(snapshot: DataSnapshot) {
+                            //Have new driver
+                            val geoQueryModel = snapshot.getValue(GeoQueryModel.class)
+                        }
+
+                        override fun onChildMoved(
+                            snapshot: DataSnapshot,
+                            previousChildName: String?
+                        ) {
+
+                        }
+
+                        override fun onCancelled(error: DatabaseError) {
+                            Snackbar.make(requireView(),error.message,Snackbar.LENGTH_SHORT).show()
+                        }
+
+                    })
+
+                }catch (e: IOException)
+                {
+                    Snackbar.make(requireView(),getString(R.string.permission_require),Snackbar.LENGTH_SHORT).show()
+                }
+            }
+    }
+
+    private fun addRiderMarker() {
+        //Code Later
+    }
+
     @SuppressLint("VisibleForTests")
     private fun init() {
-
-        onlineRef = CustomerLoginActivity.database.getReference().child(".info/connected")
-        driverLocationRef = CustomerLoginActivity.database.getReference(CustomerCommon.CUSTOMER_LOCATION_REFERENCE)
-        currentUserRef = driverLocationRef.child(
-            FirebaseAuth.getInstance().currentUser!!.uid
-        )
-
-        geofire= GeoFire(driverLocationRef)
-
-        registerOnlineSystem()
 
         locationRequest = LocationRequest()
         locationRequest.setPriority(PRIORITY_HIGH_ACCURACY)
@@ -144,18 +237,20 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     locationResult.lastLocation!!.longitude)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(newPos,18f))
 
-                // Update location
+                //If user has change location,calculate and load driver again
+                if (firstTime)
+                {
+                    previousLocation=locationResult.lastLocation
+                    currentLocation=locationResult.lastLocation
 
-                geofire.setLocation(
-                    CustomerLoginActivity.firebaseAuth.currentUser!!.uid,
-                    GeoLocation(locationResult.lastLocation!!.latitude,
-                        locationResult.lastLocation!!.longitude),
-                ){ key:String?, error:DatabaseError? ->
-                    if(error != null)
-                        Snackbar.make(mapFragment.requireView(),error.message,Snackbar.LENGTH_LONG).show()
-                    else
-                        Snackbar.make(mapFragment.requireView(),"You're online!",Snackbar.LENGTH_SHORT).show()
+                    firstTime=false
+                }else{
+                    previousLocation=currentLocation
+                    currentLocation=locationResult.lastLocation
                 }
+
+                if(previousLocation!!.distanceTo(currentLocation!!)/1000 <= LIMIT_RANGE)
+                    loadAvailableRiders()
             }
         }
 
@@ -168,16 +263,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest,locationCallback,Looper.myLooper())
+
+        loadAvailableRiders()
 
     }
 
@@ -218,10 +308,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     mMap.setOnMyLocationClickListener {
                         fusedLocationProviderClient.lastLocation
                             .addOnFailureListener{e ->
-                                Toast.makeText(
-                                    context!!,
-                                    e.message,
-                                    Toast.LENGTH_SHORT
+                                Snackbar.make(
+                                    requireView(),
+                                    e.message!!,
+                                    Snackbar.LENGTH_LONG
                                 ).show()
                             }.addOnSuccessListener { location ->
                                 val userLatLng = LatLng(location.latitude,location.longitude)
@@ -236,15 +326,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                         .parent as View
                     val locationButton = view.findViewById<View>("2".toInt())
                     val params = locationButton.layoutParams as RelativeLayout.LayoutParams
-                    params.addRule(RelativeLayout.ALIGN_TOP,0)
+                    params.addRule(RelativeLayout.ALIGN_PARENT_TOP,0)
                     params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM,RelativeLayout.TRUE)
                     params.bottomMargin = 50
-
-
                 }
 
                 override fun onPermissionDenied(p0: PermissionDeniedResponse?) {
-                    Toast.makeText(context!!,"Permission "+p0!!.permissionName+" was denied",Toast.LENGTH_SHORT).show()
+                    Snackbar.make(requireView(),p0!!.permissionName+" needed for running the app",
+                        Snackbar.LENGTH_LONG).show()
                 }
 
                 override fun onPermissionRationaleShouldBeShown(
@@ -256,14 +345,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
             }).check()
 
+
+
         try {
             val success = googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(requireContext(),
                 R.raw.uber_maps_style))
             if (!success)
-                Log.e("EDMT_ERROR","Style parsing error")
-        }catch (e: Resources.NotFoundException)
+                Snackbar.make(requireView(),"Load map styles failed",
+                    Snackbar.LENGTH_LONG).show()
+        }catch (e: Exception)
         {
-            Log.e("EDMT_ERROR", e.message.toString())
+            Snackbar.make(requireView(),""+e.message,
+                Snackbar.LENGTH_LONG).show()
         }
 
 

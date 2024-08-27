@@ -36,4 +36,5 @@
     <string name="title_activity_customer">CustomerActivity</string>
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
+    <string name="permission_require">Permission Location required</string>
 </resources>
