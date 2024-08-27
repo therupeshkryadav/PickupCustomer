@@ -361,7 +361,6 @@
                     android:textColorHint="@color/colorPrimary"
                     android:textColor="@color/colorPrimary"
                     android:importantForAutofill="no"
-                    android:maxLength="10"
                     android:inputType="phone" />
 
             </com.google.android.material.textfield.TextInputLayout>

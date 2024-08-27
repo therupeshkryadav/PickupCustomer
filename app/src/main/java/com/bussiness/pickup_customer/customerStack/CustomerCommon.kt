@@ -17,9 +17,9 @@ import com.google.android.gms.maps.model.Marker
 
 object CustomerCommon {
     val markerList: MutableMap<String, Marker> =HashMap<String, Marker>()
-    val RIDER_INFO_REFERENCE: String= "DriverInfo"
+    val RIDER_INFO_REFERENCE: String= "RiderInfo"
     val ridersFound: MutableSet<RiderGeoModel> =HashSet<RiderGeoModel>()
-    val RIDER_LOCATION_REFERENCE: String= "DriversLocation"
+    val RIDER_LOCATION_REFERENCE: String= "RidersLocation"
     val NOTI_BODY: String = "body"
     val NOTI_TITLE: String = "title"
 

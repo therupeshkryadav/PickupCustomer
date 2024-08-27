@@ -88,8 +88,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
     var firstTime = true
 
     //Listener
-    lateinit var iFirebaseRiderInfoListener: FirebaseRiderInfoListener
-    lateinit var iFirebaseFailedListener: FirebaseFailedListener
+    var iFirebaseRiderInfoListener: FirebaseRiderInfoListener?=null
+    var iFirebaseFailedListener: FirebaseFailedListener?=null
 
     var cityName = ""
 
@@ -230,6 +230,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
             }
     }
 
+    @SuppressLint("CheckResult")
     private fun addRiderMarker() {
         if(CustomerCommon.ridersFound.size > 0)
         {
@@ -260,16 +261,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                    if(snapshot.hasChildren())
                    {
                        riderGeoModel.riderInfoModel= snapshot.getValue(RiderInfoModel::class.java)
-                       iFirebaseRiderInfoListener.onRiderInfoLoadSuccess(riderGeoModel)
+                       iFirebaseRiderInfoListener!!.onRiderInfoLoadSuccess(riderGeoModel)
                    }
                    else
                    {
-                       iFirebaseFailedListener.onFirebaseFailed(getString(R.string.key_not_found)+riderGeoModel.key)
+                       iFirebaseFailedListener?.onFirebaseFailed(getString(R.string.key_not_found)+riderGeoModel.key)
                    }
                }
 
                override fun onCancelled(error: DatabaseError) {
-                   iFirebaseFailedListener.onFirebaseFailed(error.message)
+                   iFirebaseFailedListener!!.onFirebaseFailed(error.message)
                }
 
            })

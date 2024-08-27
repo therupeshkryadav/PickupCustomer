@@ -10,6 +10,7 @@ import android.view.Window
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bussiness.pickup.customerStack.customerModel.CustomerInfoModel
+import com.bussiness.pickup_customer.customerStack.utils.UserUtils
 import com.bussiness.pickup_customer.databinding.ActivityCustomerLoginBinding
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.firebase.FirebaseException
@@ -26,6 +27,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.GenericTypeIndicator
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import java.util.concurrent.TimeUnit
@@ -59,6 +61,23 @@ class CustomerLoginActivity : AppCompatActivity() {
         init()
 
         if (firebaseAuth.currentUser != null) {
+            FirebaseMessaging.getInstance().token
+                .addOnCompleteListener { task ->
+                    if (!task.isSuccessful) {
+                        Toast.makeText(this@CustomerLoginActivity, "Failed to get token", Toast.LENGTH_LONG).show()
+                        return@addOnCompleteListener
+                    }
+
+                    // Get the FCM token
+                    val token = task.result
+
+                    // Handle the token (e.g., send it to your server)
+                    UserUtils.updateToken(this@CustomerLoginActivity,token)
+                    Toast.makeText(this@CustomerLoginActivity, "Token: $token", Toast.LENGTH_LONG).show()
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(this@CustomerLoginActivity, e.message, Toast.LENGTH_LONG).show()
+                }
             // Show progress bar while checking user role
             checkUserRoles()
         } else {
