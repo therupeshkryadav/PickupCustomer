@@ -85,9 +85,11 @@ class CustomerLoginActivity : AppCompatActivity() {
                 val token = task.result
 
                 // Handle the token (e.g., send it to your server)
-                UserUtils.updateToken(this@CustomerLoginActivity, token)
-                Toast.makeText(this@CustomerLoginActivity, "Token: $token", Toast.LENGTH_LONG)
-                    .show()
+                if (firebaseAuth.currentUser != null) {
+                    UserUtils.updateToken(this@CustomerLoginActivity, token)
+                    Toast.makeText(this@CustomerLoginActivity, "Token: $token", Toast.LENGTH_LONG)
+                        .show()
+                }
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this@CustomerLoginActivity, e.message, Toast.LENGTH_LONG).show()
@@ -108,6 +110,7 @@ class CustomerLoginActivity : AppCompatActivity() {
             userRef.addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     val role = dataSnapshot.child("role").getValue<String>()
+                    println("FIREBASE_USER => $role")
                     if (role == "customer") {
                         // if user is customer then navigating to customer activity
                      startActivity(Intent(this@CustomerLoginActivity, CustomerActivity::class.java))
