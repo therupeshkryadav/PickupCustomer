@@ -21,11 +21,16 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import com.bumptech.glide.Glide
+import com.bussiness.pickup.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.ChoiceActivity
 import com.bussiness.pickup_customer.R
 import com.bussiness.pickup_customer.customerStack.utils.UserUtils
 import com.bussiness.pickup_customer.databinding.ActivityCustomerBinding
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 
@@ -94,22 +99,41 @@ class CustomerActivity : AppCompatActivity() {
         val txt_phone = headerView.findViewById<View>(R.id.txt_phone) as TextView
         img_avatar = headerView.findViewById<View>(R.id.img_avatar) as ImageView
 
-        txt_name.text = CustomerCommon.buildWelcomeMessage() ?: "Welcome!"
-        txt_phone.text = CustomerCommon.currentUser?.phoneNumber ?: "Not Available"
+        var customerInfoReference =
+            FirebaseDatabase.getInstance().getReference("Users").child(CustomerCommon.CUSTOMER_INFO_REFERENCE)
+        customerInfoReference
+            .child(FirebaseAuth.getInstance().currentUser!!.uid)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val model = snapshot.getValue(CustomerInfoModel::class.java)
+                        println("FIREBASE_USER => $model")
+                        //setting up the ui
+                        txt_name.text = model?.firstName
+                        txt_phone.text = model?.phoneNumber
 
-        CustomerCommon.currentUser?.avatar?.takeIf { it.isNotEmpty() }?.let {
-            Glide.with(this)
-                .load(CustomerCommon.currentUser!!.avatar)
-                .into(img_avatar)
-        }
+                        CustomerCommon.currentUser?.avatar?.takeIf { it.isNotEmpty() }?.let {
+                            Glide.with(this@CustomerActivity)
+                                .load(model?.avatar)
+                                .into(img_avatar)
+                        }
 
-        img_avatar.setOnClickListener {
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                type = "image/*"
-                addCategory(Intent.CATEGORY_OPENABLE)
-            }
-            startActivityForResult(Intent.createChooser(intent, "SELECT PICTURES"), PICK_IMAGE_REQUEST)
-        }
+                        img_avatar.setOnClickListener {
+                            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                                type = "image/*"
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                            }
+                            startActivityForResult(Intent.createChooser(intent, "SELECT PICTURES"), PICK_IMAGE_REQUEST)
+                        }
+                    } else {
+                        println("FIREBASE_USER => user not exist")
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+
+                }
+            })
     }
 
 

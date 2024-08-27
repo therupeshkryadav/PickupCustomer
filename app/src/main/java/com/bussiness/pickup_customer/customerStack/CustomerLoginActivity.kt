@@ -191,6 +191,7 @@ class CustomerLoginActivity : AppCompatActivity() {
 
         override fun onVerificationFailed(e: FirebaseException) {
             binding.progress.visibility = View.GONE
+            println("FIEEAEERR +> $e")
             when (e) {
                 is FirebaseAuthInvalidCredentialsException -> {
                     Toast.makeText(
