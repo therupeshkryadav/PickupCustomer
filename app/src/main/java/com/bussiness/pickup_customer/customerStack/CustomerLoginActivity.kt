@@ -34,65 +34,66 @@ import java.util.concurrent.TimeUnit
 
 class CustomerLoginActivity : AppCompatActivity() {
 
-    companion object {
-        lateinit var firebaseAuth: FirebaseAuth
-        lateinit var database: FirebaseDatabase
-        lateinit var customerInfoReference: DatabaseReference
-        lateinit var storageReference: StorageReference
-
-        fun init() {
-            if (!Companion::firebaseAuth.isInitialized) {
-                firebaseAuth = FirebaseAuth.getInstance()
-                database = FirebaseDatabase.getInstance()
-                storageReference = FirebaseStorage.getInstance().reference
-                customerInfoReference = database.getReference("Users").child(CustomerCommon.CUSTOMER_INFO_REFERENCE)
-            }
-        }
-    }
-
     private lateinit var binding: ActivityCustomerLoginBinding
     private var verificationId: String? = null
     private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
+    private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var database: FirebaseDatabase
+    private lateinit var customerInfoReference: DatabaseReference
+    private lateinit var storageReference: StorageReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        binding = ActivityCustomerLoginBinding.inflate(layoutInflater)
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
+        setContentView(binding.root)
 
         // Initialize Firebase and other necessary components
-        init()
+        initFirebase()
+        updateFCMToken()
 
         if (firebaseAuth.currentUser != null) {
-            FirebaseMessaging.getInstance().token
-                .addOnCompleteListener { task ->
-                    if (!task.isSuccessful) {
-                        Toast.makeText(this@CustomerLoginActivity, "Failed to get token", Toast.LENGTH_LONG).show()
-                        return@addOnCompleteListener
-                    }
-
-                    // Get the FCM token
-                    val token = task.result
-
-                    // Handle the token (e.g., send it to your server)
-                    UserUtils.updateToken(this@CustomerLoginActivity,token)
-                    Toast.makeText(this@CustomerLoginActivity, "Token: $token", Toast.LENGTH_LONG).show()
-                }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this@CustomerLoginActivity, e.message, Toast.LENGTH_LONG).show()
-                }
-            // Show progress bar while checking user role
+            // if user exists then checking the user role
             checkUserRoles()
         } else {
-            // Initialize the UI components and set the content view
-            initUI()
+            // if new user then showing the login ui
             showLoginLayout()
         }
     }
 
-    private fun initUI() {
-        // Initialize binding and set the content view only after initialization
-        binding = ActivityCustomerLoginBinding.inflate(layoutInflater)
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(binding.root)
+    private fun initFirebase() {
+        firebaseAuth = FirebaseAuth.getInstance()
+        database = FirebaseDatabase.getInstance()
+        storageReference = FirebaseStorage.getInstance().reference
+        customerInfoReference =
+            database.getReference("Users").child(CustomerCommon.CUSTOMER_INFO_REFERENCE)
     }
+
+    private fun updateFCMToken(){
+        FirebaseMessaging.getInstance().token
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    Toast.makeText(
+                        this@CustomerLoginActivity,
+                        "Failed to get token",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@addOnCompleteListener
+                }
+
+                // Get the FCM token
+                val token = task.result
+
+                // Handle the token (e.g., send it to your server)
+                UserUtils.updateToken(this@CustomerLoginActivity, token)
+                Toast.makeText(this@CustomerLoginActivity, "Token: $token", Toast.LENGTH_LONG)
+                    .show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this@CustomerLoginActivity, e.message, Toast.LENGTH_LONG).show()
+            }
+    }
+
 
     private fun checkUserRoles() {
         // Show a progress dialog or similar UI component here
@@ -101,32 +102,32 @@ class CustomerLoginActivity : AppCompatActivity() {
         progressDialog.setCancelable(false)
         progressDialog.show()
 
-        val userId = firebaseAuth.currentUser?.uid ?: return
-        val userRef = customerInfoReference.child(userId)
+        val userId = firebaseAuth.currentUser?.uid
+        userId?.let {
+            val userRef = customerInfoReference.child(it)
+            userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    val role = dataSnapshot.child("role").getValue<String>()
+                    if (role == "customer") {
+                        // if user is customer then navigating to customer activity
+                     startActivity(Intent(this@CustomerLoginActivity, CustomerActivity::class.java))
+                    } else {
+                     Toast.makeText(this@CustomerLoginActivity, "User is not a customer.", Toast.LENGTH_LONG).show()
+                    }
 
-        userRef.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-
-
-                val role = dataSnapshot.child("role").getValue<String>()
-                if (role == "customer") {
-                    // Delay the start of CustomerActivity slightly
-                    Handler().postDelayed({
-                        startActivity(Intent(this@CustomerLoginActivity, CustomerActivity::class.java))
-                        finish() // Close the login activity
-                    }, 200) // Adjust delay time as needed
-                } else {
-                    initUI() // Initialize the UI only if the role check fails
-                    Toast.makeText(this@CustomerLoginActivity, "User is not a customer.", Toast.LENGTH_LONG).show()
                 }
-            }
 
-            override fun onCancelled(error: DatabaseError) {
-                progressDialog.dismiss() // Dismiss progress dialog
-                initUI() // Initialize the UI if there's an error
-                Toast.makeText(this@CustomerLoginActivity, "Failed to check user roles: ${error.message}", Toast.LENGTH_LONG).show()
-            }
-        })
+                override fun onCancelled(error: DatabaseError) {
+                    progressDialog.dismiss() // Dismiss progress dialog
+                    Toast.makeText(
+                        this@CustomerLoginActivity,
+                        "Failed to check user roles: ${error.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            })
+        }
+
     }
 
     private fun sendOTP() {
@@ -134,7 +135,7 @@ class CustomerLoginActivity : AppCompatActivity() {
         if (phoneNumber.isNotEmpty() && phoneNumber.length >= 10) { // Validate phone number
             val fullPhoneNumber = "+${binding.ccp.selectedCountryCode}${phoneNumber}"
             binding.OTPLayout.visibility = View.VISIBLE
-            Toast.makeText(this,"$fullPhoneNumber",Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "$fullPhoneNumber", Toast.LENGTH_SHORT).show()
             sendVerificationCode(fullPhoneNumber)
             binding.loginLayout.visibility = View.INVISIBLE
         } else {
@@ -165,7 +166,10 @@ class CustomerLoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun resendVerificationCode(phoneNumber: String, token: PhoneAuthProvider.ForceResendingToken?) {
+    private fun resendVerificationCode(
+        phoneNumber: String,
+        token: PhoneAuthProvider.ForceResendingToken?
+    ) {
         val options = PhoneAuthOptions.newBuilder(firebaseAuth)
             .setPhoneNumber(phoneNumber)
             .setTimeout(60L, TimeUnit.SECONDS)
@@ -186,19 +190,36 @@ class CustomerLoginActivity : AppCompatActivity() {
             binding.progress.visibility = View.GONE
             when (e) {
                 is FirebaseAuthInvalidCredentialsException -> {
-                    Toast.makeText(this@CustomerLoginActivity, "Invalid request. Please check your phone number.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@CustomerLoginActivity,
+                        "Invalid request. Please check your phone number.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
+
                 is FirebaseTooManyRequestsException -> {
-                    Toast.makeText(this@CustomerLoginActivity, "Too many requests. Please wait a while before trying again.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@CustomerLoginActivity,
+                        "Too many requests. Please wait a while before trying again.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
+
                 else -> {
-                    Toast.makeText(this@CustomerLoginActivity, "Verification failed. Please try again.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@CustomerLoginActivity,
+                        "Verification failed. Please try again.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
             binding.resendOtp.visibility = View.VISIBLE
         }
 
-        override fun onCodeSent(verificationId: String, token: PhoneAuthProvider.ForceResendingToken) {
+        override fun onCodeSent(
+            verificationId: String,
+            token: PhoneAuthProvider.ForceResendingToken
+        ) {
             super.onCodeSent(verificationId, token)
             this@CustomerLoginActivity.verificationId = verificationId
             this@CustomerLoginActivity.resendToken = token
@@ -223,7 +244,8 @@ class CustomerLoginActivity : AppCompatActivity() {
                     checkUserFromFirebase()
                 } else {
                     Log.e("PhoneAuth", "Error: ${task.exception?.message}")
-                    Toast.makeText(this, "Incorrect OTP code. Please try again.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Incorrect OTP code. Please try again.", Toast.LENGTH_LONG)
+                        .show()
                 }
             }
     }
@@ -235,14 +257,17 @@ class CustomerLoginActivity : AppCompatActivity() {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
                         val model = snapshot.getValue(CustomerInfoModel::class.java)
+                        println("FIREBASE_USER => $model")
                         goToCustomerActivity(model)
                     } else {
+                        println("FIREBASE_USER => user not exist")
                         showRegisterLayout()
                     }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    Toast.makeText(this@CustomerLoginActivity, error.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@CustomerLoginActivity, error.message, Toast.LENGTH_SHORT)
+                        .show()
                 }
             })
     }
@@ -293,7 +318,8 @@ class CustomerLoginActivity : AppCompatActivity() {
                 val parsedNumber = phoneNumberUtil.parse(phoneNumber, null)
 
                 // Format the phone number without the country code
-                val nationalNumber = phoneNumberUtil.format(parsedNumber, PhoneNumberUtil.PhoneNumberFormat.NATIONAL)
+                val nationalNumber =
+                    phoneNumberUtil.format(parsedNumber, PhoneNumberUtil.PhoneNumberFormat.NATIONAL)
 
                 // Remove leading zero and country code
                 val numberWithoutCountryCode = nationalNumber
@@ -315,9 +341,24 @@ class CustomerLoginActivity : AppCompatActivity() {
             val fullPhoneNumber = "+${binding.ccp2.selectedCountryCode}${phoneNumber}"
 
             when {
-                firstName.isEmpty() -> Toast.makeText(this, "Please Enter First Name", Toast.LENGTH_SHORT).show()
-                lastName.isEmpty() -> Toast.makeText(this, "Please Enter Last Name", Toast.LENGTH_SHORT).show()
-                phoneNumber.isEmpty() -> Toast.makeText(this, "Please Enter Phone Number", Toast.LENGTH_SHORT).show()
+                firstName.isEmpty() -> Toast.makeText(
+                    this,
+                    "Please Enter First Name",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                lastName.isEmpty() -> Toast.makeText(
+                    this,
+                    "Please Enter Last Name",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                phoneNumber.isEmpty() -> Toast.makeText(
+                    this,
+                    "Please Enter Phone Number",
+                    Toast.LENGTH_SHORT
+                ).show()
+
                 else -> {
                     val model = CustomerInfoModel().apply {
                         this.firstName = firstName
@@ -329,7 +370,11 @@ class CustomerLoginActivity : AppCompatActivity() {
                     customerInfoReference.child(firebaseAuth.currentUser!!.uid)
                         .setValue(model)
                         .addOnFailureListener { e ->
-                            Toast.makeText(this, "Registration failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this,
+                                "Registration failed: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             binding.progress.visibility = View.GONE
                         }
                         .addOnSuccessListener {

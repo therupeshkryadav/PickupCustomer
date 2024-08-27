@@ -25,6 +25,7 @@ import com.bussiness.pickup_customer.ChoiceActivity
 import com.bussiness.pickup_customer.R
 import com.bussiness.pickup_customer.customerStack.utils.UserUtils
 import com.bussiness.pickup_customer.databinding.ActivityCustomerBinding
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 
@@ -39,6 +40,7 @@ class CustomerActivity : AppCompatActivity() {
     private lateinit var waitingDialog: AlertDialog
     private lateinit var storageReference: StorageReference
     private var imageUri: Uri? = null
+    private lateinit var firebaseAuth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +49,8 @@ class CustomerActivity : AppCompatActivity() {
         // Remove the title bar
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(binding.root)
+
+        firebaseAuth = FirebaseAuth.getInstance()
 
         setSupportActionBar(binding.appBarNavigation.toolbar)
 
@@ -127,7 +131,7 @@ class CustomerActivity : AppCompatActivity() {
                 dialogInterface.dismiss()
             }
             .setPositiveButton("SIGN OUT") { dialogInterface, _ ->
-                CustomerLoginActivity.firebaseAuth.signOut()
+                firebaseAuth.signOut()
                 // Use the correct context for starting the activity
                 val intent = Intent(this, ChoiceActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -156,7 +160,7 @@ class CustomerActivity : AppCompatActivity() {
             .setPositiveButton("CHANGE") { dialogInterface, _ ->
                 imageUri?.let { uri ->
                     waitingDialog.show()
-                    val avatarFolder = storageReference.child("avatars/${CustomerLoginActivity.firebaseAuth.currentUser!!.uid}")
+                    val avatarFolder = storageReference.child("avatars/${firebaseAuth.currentUser!!.uid}")
 
                     avatarFolder.putFile(uri)
                         .addOnFailureListener { e ->

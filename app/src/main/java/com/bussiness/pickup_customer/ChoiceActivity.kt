@@ -17,9 +17,11 @@ class ChoiceActivity : AppCompatActivity() {
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(binding.root)
 
-        binding.iMCustomer.setOnClickListener {
-            startActivity(Intent(this@ChoiceActivity, CustomerLoginActivity::class.java))
-            finish()
+        binding.apply {
+            iMCustomer.setOnClickListener {
+                startActivity(Intent(this@ChoiceActivity, CustomerLoginActivity::class.java))
+                finish()
+            }
         }
     }
 }
