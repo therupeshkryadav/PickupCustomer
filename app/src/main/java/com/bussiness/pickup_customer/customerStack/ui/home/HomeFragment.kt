@@ -9,6 +9,7 @@ import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
+import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -23,7 +24,9 @@ import com.bussiness.pickup_customer.customerStack.Callback.FirebaseFailedListen
 import com.bussiness.pickup_customer.customerStack.Callback.FirebaseRiderInfoListener
 import com.bussiness.pickup_customer.customerStack.CustomerCommon
 import com.bussiness.pickup_customer.customerStack.CustomerLoginActivity
+import com.bussiness.pickup_customer.customerStack.customerModel.GeoQueryModel
 import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
+import com.bussiness.pickup_customer.customerStack.customerModel.RiderInfoModel
 import com.bussiness.pickup_customer.databinding.FragmentHomeCustomerBinding
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
@@ -39,8 +42,11 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ChildEventListener
@@ -56,10 +62,13 @@ import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.IOException
 import java.util.Locale
 
-class HomeFragment : Fragment(), OnMapReadyCallback {
+class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
 
     private lateinit var mMap: GoogleMap
     private var _binding: FragmentHomeCustomerBinding? = null
@@ -129,7 +138,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             .addOnSuccessListener { location->
                 //Load all riders in city
                 val geocoder = Geocoder(requireContext(), Locale.getDefault())
-                var addressList = List<Address>()
+                var addressList : List<Address> = ArrayList()
                 try {
                     addressList = geocoder.getFromLocation(location.latitude,location.longitude,1)!!
                     cityName= addressList[0].locality
@@ -162,7 +171,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                                 loadAvailableRiders()
                             }
                             else{
-                                distance = 0
+                                distance = 0.0
                                 addRiderMarker()
                             }
                         }
@@ -189,8 +198,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                         }
 
                         override fun onChildRemoved(snapshot: DataSnapshot) {
-                            //Have new driver
-                            val geoQueryModel = snapshot.getValue(GeoQueryModel.class)
+                            //Have new rider
+                            val geoQueryModel = snapshot.getValue(GeoQueryModel::class.java)
+                            val geoLocation = GeoLocation(geoQueryModel!!.l!![0], geoQueryModel!!.l!![1])
+                            val riderGeoModel = RiderGeoModel(snapshot.key,geoLocation)
+                            val newRiderLocation = Location("")
+                            newRiderLocation.latitude = geoLocation.latitude
+                            newRiderLocation.longitude = geoLocation.longitude
+                            val newDistance= location.distanceTo(newRiderLocation)/1000 //in km
+                            if(distance <= LIMIT_RANGE)
+                                findRiderByKey(riderGeoModel)
                         }
 
                         override fun onChildMoved(
@@ -214,11 +231,53 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun addRiderMarker() {
-        //Code Later
+        if(CustomerCommon.ridersFound.size > 0)
+        {
+            Observable.fromIterable(CustomerCommon.ridersFound)
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    {riderGeoModel: RiderGeoModel? ->
+                        findRiderByKey(riderGeoModel)
+                    },
+                    {
+                        t: Throwable -> Snackbar.make(requireView(),t.message!!,Snackbar.LENGTH_SHORT).show()
+                    }
+                )
+        }
+        else
+        {
+            Snackbar.make(requireView(),getString(R.string.rider_not_found),Snackbar.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun findRiderByKey(riderGeoModel: RiderGeoModel?){
+       FirebaseDatabase.getInstance()
+           .getReference(CustomerCommon.RIDER_INFO_REFERENCE)
+           .child(riderGeoModel!!.key!!)
+           .addListenerForSingleValueEvent(object:ValueEventListener{
+               override fun onDataChange(snapshot: DataSnapshot) {
+                   if(snapshot.hasChildren())
+                   {
+                       riderGeoModel.riderInfoModel= snapshot.getValue(RiderInfoModel::class.java)
+                       iFirebaseRiderInfoListener.onRiderInfoLoadSuccess(riderGeoModel)
+                   }
+                   else
+                   {
+                       iFirebaseFailedListener.onFirebaseFailed(getString(R.string.key_not_found)+riderGeoModel.key)
+                   }
+               }
+
+               override fun onCancelled(error: DatabaseError) {
+                   iFirebaseFailedListener.onFirebaseFailed(error.message)
+               }
+
+           })
     }
 
     @SuppressLint("VisibleForTests")
     private fun init() {
+        iFirebaseRiderInfoListener= this
 
         locationRequest = LocationRequest()
         locationRequest.setPriority(PRIORITY_HIGH_ACCURACY)
@@ -263,6 +322,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+//            Snackbar.make(requireView(),getString(R.string.permission_require),Snackbar.LENGTH_SHORT).show()
             return
         }
         fusedLocationProviderClient.requestLocationUpdates(locationRequest,locationCallback,Looper.myLooper())
@@ -328,7 +388,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val params = locationButton.layoutParams as RelativeLayout.LayoutParams
                     params.addRule(RelativeLayout.ALIGN_PARENT_TOP,0)
                     params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM,RelativeLayout.TRUE)
-                    params.bottomMargin = 50
+                    params.bottomMargin = 250
                 }
 
                 override fun onPermissionDenied(p0: PermissionDeniedResponse?) {
@@ -345,6 +405,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
             }).check()
 
+        //Enable Zoom
+        mMap.uiSettings.isZoomControlsEnabled = true
 
 
         try {
@@ -360,5 +422,45 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
 
 
+    }
+
+    override fun onRiderInfoLoadSuccess(riderGeoModel: RiderGeoModel?) {
+        //If already have marker with this key, doesn't set it again
+        if(!CustomerCommon.markerList.containsKey(riderGeoModel!!.key))
+            CustomerCommon.markerList.put(riderGeoModel!!.key!!,
+                mMap.addMarker(MarkerOptions()
+                    .position(LatLng(riderGeoModel!!.geoLocation!!.latitude,riderGeoModel!!.geoLocation!!.longitude))
+                    .flat(true)
+                    .title(CustomerCommon.buildName(riderGeoModel!!.riderInfoModel!!.firstName,riderGeoModel!!.riderInfoModel!!.lastName))
+                    .snippet(riderGeoModel.riderInfoModel!!.phoneNumber)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.car)))!!
+            )
+
+        if (!TextUtils.isEmpty(cityName))
+        {
+            val riderLocation = FirebaseDatabase.getInstance()
+                .getReference(CustomerCommon.RIDER_LOCATION_REFERENCE)
+                .child(cityName)
+                .child(riderGeoModel!!.key!!)
+            riderLocation.addValueEventListener(object : ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if(!snapshot.hasChildren())
+                    {
+                        if(CustomerCommon.markerList.get(riderGeoModel!!.key!!) != null)
+                        {
+                           val marker = CustomerCommon.markerList.get(riderGeoModel!!.key!!)
+                            marker!!.remove() //Remove marker from map
+                            CustomerCommon.markerList.remove(riderGeoModel!!.key!!) //Remove marker information
+                            riderLocation.removeEventListener(this)
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Snackbar.make(requireView(), error.message,Snackbar.LENGTH_SHORT).show()
+                }
+
+            })
+        }
     }
 }

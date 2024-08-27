@@ -12,4 +12,7 @@ class RiderGeoModel {
         this.key = key
         this.geoLocation = geoLocation!!
     }
+
+
+
 }

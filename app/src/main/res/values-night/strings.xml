@@ -37,4 +37,6 @@
     <string name="menu_gallery">Gallery</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="permission_require">Permission Location required</string>
+    <string name="rider_not_found">Riders not found</string>
+    <string name="key_not_found">Key Rider not found</string>
 </resources>

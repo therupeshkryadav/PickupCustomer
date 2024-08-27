@@ -13,8 +13,20 @@ import androidx.core.app.NotificationCompat
 import com.bussiness.pickup.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.R
 import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
+import com.google.android.gms.maps.model.Marker
 
 object CustomerCommon {
+    val markerList: MutableMap<String, Marker> =HashMap<String, Marker>()
+    val RIDER_INFO_REFERENCE: String= "DriverInfo"
+    val ridersFound: MutableSet<RiderGeoModel> =HashSet<RiderGeoModel>()
+    val RIDER_LOCATION_REFERENCE: String= "DriversLocation"
+    val NOTI_BODY: String = "body"
+    val NOTI_TITLE: String = "title"
+
+    val TOKEN_REFERENCE: String = "Token"
+
+    var currentUser: CustomerInfoModel?= null
+    val CUSTOMER_INFO_REFERENCE: String="CustomersInfo"
     // Use safe calls to avoid NullPointerException
     fun buildWelcomeMessage(): String {
         val firstName = currentUser!!.firstName ?: "User"
@@ -61,13 +73,7 @@ object CustomerCommon {
 
     }
 
-    val ridersFound: HashSet<RiderGeoModel>()
-    val RIDER_LOCATION_REFERENCE: String= "DriversLocation"
-    val NOTI_BODY: String = "body"
-    val NOTI_TITLE: String = "title"
-
-    val TOKEN_REFERENCE: String = "Token"
-
-    var currentUser: CustomerInfoModel?= null
-    val CUSTOMER_INFO_REFERENCE: String="CustomersInfo"
+    fun buildName(firstName: String, lastName: String): String? {
+        return java.lang.StringBuilder(firstName).append(" ").append(lastName).toString()
+    }
 }
