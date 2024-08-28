@@ -1,9 +1,9 @@
-package com.bussiness.pickup.customerStack.customerModel
+package com.bussiness.pickup_customer.customerStack.customerModel
 
 class CustomerInfoModel {
     var role: String=""
     var firstName:String=""
     var lastName:String=""
     var phoneNumber:String=""
-    val avatar:String=""
+    var avatar:String=""
 }

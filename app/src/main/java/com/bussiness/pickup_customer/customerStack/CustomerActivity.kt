@@ -1,9 +1,11 @@
 package com.bussiness.pickup_customer.customerStack
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.view.Window
@@ -21,7 +23,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import com.bumptech.glide.Glide
-import com.bussiness.pickup.customerStack.customerModel.CustomerInfoModel
+import com.bussiness.pickup_customer.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.ChoiceActivity
 import com.bussiness.pickup_customer.R
 import com.bussiness.pickup_customer.customerStack.utils.UserUtils
@@ -104,28 +106,33 @@ class CustomerActivity : AppCompatActivity() {
         customerInfoReference
             .child(FirebaseAuth.getInstance().currentUser!!.uid)
             .addListenerForSingleValueEvent(object : ValueEventListener {
+                @SuppressLint("SetTextI18n")
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
                         val model = snapshot.getValue(CustomerInfoModel::class.java)
                         println("FIREBASE_USER => $model")
-                        //setting up the ui
-                        txt_name.text = model?.firstName
-                        txt_phone.text = model?.phoneNumber
 
-                        CustomerCommon.currentUser?.avatar?.takeIf { it.isNotEmpty() }?.let {
+                        model?.let {
+                            // Setting up the UI
+                            txt_name.text = listOfNotNull(it.firstName, it.lastName).joinToString(" ")
+                            txt_phone.text = it.phoneNumber.orEmpty()
+
+                            // Load the image in img_avatar using Glide
                             Glide.with(this@CustomerActivity)
-                                .load(model?.avatar)
+                                .load(it.avatar)
                                 .into(img_avatar)
-                        }
 
-                        img_avatar.setOnClickListener {
-                            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                                type = "image/*"
-                                addCategory(Intent.CATEGORY_OPENABLE)
+                            // Set up click listener for avatar image
+                            img_avatar.setOnClickListener {
+                                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                                    type = "image/*"
+                                    addCategory(Intent.CATEGORY_OPENABLE)
+                                }
+                                startActivityForResult(Intent.createChooser(intent, "SELECT PICTURE"), PICK_IMAGE_REQUEST)
                             }
-                            startActivityForResult(Intent.createChooser(intent, "SELECT PICTURES"), PICK_IMAGE_REQUEST)
                         }
-                    } else {
+                    }
+                    else {
                         println("FIREBASE_USER => user not exist")
                     }
                 }
@@ -195,6 +202,7 @@ class CustomerActivity : AppCompatActivity() {
                             if (task.isSuccessful) {
                                 avatarFolder.downloadUrl.addOnSuccessListener { downloadUri ->
                                     val updateData = hashMapOf("avatar" to downloadUri.toString())
+                                    Log.d("down","$downloadUri")
                                     UserUtils.updateUser(drawerLayout, updateData)
 
                                     // Update the ImageView with the new avatar URL

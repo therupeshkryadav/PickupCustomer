@@ -8,7 +8,7 @@ import android.view.View
 import android.view.Window
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.bussiness.pickup.customerStack.customerModel.CustomerInfoModel
+import com.bussiness.pickup_customer.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.customerStack.utils.UserUtils
 import com.bussiness.pickup_customer.databinding.ActivityCustomerLoginBinding
 import com.google.i18n.phonenumbers.PhoneNumberUtil
