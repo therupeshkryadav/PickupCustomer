@@ -5,14 +5,11 @@ import com.firebase.geofire.GeoLocation
 class RiderGeoModel {
     var key:String?=null
     var geoLocation:GeoLocation?=null
-    var riderInfoModel:RiderInfoModel?=null
+    var riderInfoModel:RiderInfoModel? = null
 
     constructor(key:String?,geoLocation: GeoLocation?)
     {
         this.key = key
         this.geoLocation = geoLocation!!
     }
-
-
-
 }

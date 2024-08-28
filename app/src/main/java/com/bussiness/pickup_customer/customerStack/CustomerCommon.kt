@@ -27,6 +27,7 @@ object CustomerCommon {
 
     var currentUser: CustomerInfoModel?= null
     val CUSTOMER_INFO_REFERENCE: String="CustomersInfo"
+
     // Use safe calls to avoid NullPointerException
     fun buildWelcomeMessage(): String {
         val firstName = currentUser!!.firstName ?: "User"

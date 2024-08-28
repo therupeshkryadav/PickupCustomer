@@ -103,6 +103,7 @@ class CustomerActivity : AppCompatActivity() {
 
         var customerInfoReference =
             FirebaseDatabase.getInstance().getReference("Users").child(CustomerCommon.CUSTOMER_INFO_REFERENCE)
+
         customerInfoReference
             .child(FirebaseAuth.getInstance().currentUser!!.uid)
             .addListenerForSingleValueEvent(object : ValueEventListener {
@@ -113,6 +114,7 @@ class CustomerActivity : AppCompatActivity() {
                         println("FIREBASE_USER => $model")
 
                         model?.let {
+
                             // Setting up the UI
                             txt_name.text = listOfNotNull(it.firstName, it.lastName).joinToString(" ")
                             txt_phone.text = it.phoneNumber.orEmpty()

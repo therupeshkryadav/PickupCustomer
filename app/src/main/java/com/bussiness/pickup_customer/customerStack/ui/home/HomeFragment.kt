@@ -215,8 +215,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                         override fun onKeyEntered(key: String?, location: GeoLocation?) {
                             Log.d("RiderMarker", "Key entered: $key at location: $location")
                             if (key != null && location != null) {
-                                Log.d("RiderMarker", "${CustomerCommon.ridersFound}")
                                 CustomerCommon.ridersFound.add(RiderGeoModel(key, location))
+                                Log.d("RiderMarker", "${CustomerCommon.ridersFound.add(RiderGeoModel(key, location))}")
                             }
                         }
 
@@ -319,6 +319,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                    if(snapshot.hasChildren())
                    {
                        riderGeoModel.riderInfoModel= (snapshot.getValue(RiderInfoModel::class.java))
+                      Log.d("RiderMarker","${riderGeoModel.riderInfoModel}")
                        iFirebaseRiderInfoListener!!.onRiderInfoLoadSuccess(riderGeoModel)
                    }
                    else
