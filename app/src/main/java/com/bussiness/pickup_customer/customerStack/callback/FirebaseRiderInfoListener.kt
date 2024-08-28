@@ -1,4 +1,4 @@
-package com.bussiness.pickup_customer.customerStack.Callback
+package com.bussiness.pickup_customer.customerStack.callback
 
 import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
 

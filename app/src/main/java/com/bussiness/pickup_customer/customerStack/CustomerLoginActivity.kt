@@ -80,12 +80,12 @@ class CustomerLoginActivity : AppCompatActivity() {
                 }
 
                 // Get the FCM token
-                val token = task.result
+                val FCMtoken = task.result
 
                 // Handle the token (e.g., send it to your server)
                 if (firebaseAuth.currentUser != null) {
-                    UserUtils.updateToken(this@CustomerLoginActivity, token)
-                    Toast.makeText(this@CustomerLoginActivity, "Token: $token", Toast.LENGTH_LONG)
+                    UserUtils.updateToken(this@CustomerLoginActivity, FCMtoken)
+                    Toast.makeText(this@CustomerLoginActivity, "Token: $FCMtoken", Toast.LENGTH_LONG)
                         .show()
                 }
             }
