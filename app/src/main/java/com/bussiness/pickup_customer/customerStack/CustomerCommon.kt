@@ -1,3 +1,5 @@
+@file:Suppress("UNREACHABLE_CODE", "CAST_NEVER_SUCCEEDS", "UNCHECKED_CAST")
+
 package com.bussiness.pickup_customer.customerStack
 
 import android.app.Notification
@@ -10,12 +12,18 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.bussiness.pickup_customer.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.R
+import com.bussiness.pickup_customer.customerStack.customerModel.AnimationModel
+import com.bussiness.pickup_customer.customerStack.customerModel.CustomerInfoModel
 import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
+import kotlin.math.abs
+import kotlin.math.atan
+
 
 object CustomerCommon {
+    val ridersSubscribe: MutableMap<String,AnimationModel> = HashMap<String, AnimationModel>()
     val markerList: MutableMap<String, Marker> =HashMap<String, Marker>()
     val RIDER_INFO_REFERENCE: String= "RiderInfo"
     val ridersFound: MutableSet<RiderGeoModel> =HashSet<RiderGeoModel>()
@@ -77,4 +85,63 @@ object CustomerCommon {
     fun buildName(firstName: String, lastName: String): String? {
         return java.lang.StringBuilder(firstName).append(" ").append(lastName).toString()
     }
+
+    fun decodePoly(encoded: String): java.util.ArrayList<LatLng?> {
+        val poly = ArrayList<LatLng?>()
+        var index = 0
+        val len = encoded.length
+        var lat = 0
+        var lng = 0
+        while (index < len) {
+            var b: Int
+            var shift = 0
+            var result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlat = (if ((result and 1) != 0) (result shr 1).inv() else (result shr 1))
+            lat += dlat
+
+            shift = 0
+            result = 0
+            do {
+                b = encoded[index++].code - 63
+                result = result or ((b and 0x1f) shl shift)
+                shift += 5
+            } while (b >= 0x20)
+            val dlng = (if ((result and 1) != 0) (result shr 1).inv() else (result shr 1))
+            lng += dlng
+
+            val p = LatLng(
+                ((lat.toDouble() / 1E5)),
+                ((lng.toDouble() / 1E5))
+            )
+            poly.add(p as Nothing)
+        }
+        return poly
+    }
+
+    fun getBearing(begin: LatLng, end: LatLng): Float {
+        //You can copy this function by link at description
+        val lat = abs(begin.latitude - end.latitude)
+        val lng = abs(begin.longitude - end.longitude)
+
+        if (begin.latitude < end.latitude && begin.longitude < end.longitude) return Math.toDegrees(
+            atan(lng / lat)
+        )
+            .toFloat()
+        else if (begin.latitude >= end.latitude && begin.longitude < end.longitude) return ((90 - Math.toDegrees(
+            atan(lng / lat)
+        )) + 90).toFloat()
+        else if (begin.latitude >= end.latitude && begin.longitude >= end.longitude) return (Math.toDegrees(
+            atan(lng / lat)
+        ) + 180).toFloat()
+        else if (begin.latitude < end.latitude && begin.longitude >= end.longitude) return ((90 - Math.toDegrees(
+            atan(lng / lat)
+        )) + 270).toFloat()
+        return (-1).toFloat()
+    }
+
 }

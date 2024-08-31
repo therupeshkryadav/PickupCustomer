@@ -98,6 +98,7 @@ class CustomerActivity : AppCompatActivity() {
 
         val headerView = navView.getHeaderView(0)
         val txt_name = headerView.findViewById<View>(R.id.txt_name) as TextView
+        val txt_email = headerView.findViewById<View>(R.id.txt_email) as TextView
         val txt_phone = headerView.findViewById<View>(R.id.txt_phone) as TextView
         img_avatar = headerView.findViewById<View>(R.id.img_avatar) as ImageView
 
@@ -118,10 +119,12 @@ class CustomerActivity : AppCompatActivity() {
                             // Setting up the UI
                             txt_name.text = listOfNotNull(it.firstName, it.lastName).joinToString(" ")
                             txt_phone.text = it.phoneNumber.orEmpty()
+                            txt_email.text = it.email.orEmpty()
 
                             // Load the image in img_avatar using Glide
                             Glide.with(this@CustomerActivity)
                                 .load(it.avatar)
+                                .placeholder(R.drawable.app_icon)
                                 .into(img_avatar)
 
                             // Set up click listener for avatar image

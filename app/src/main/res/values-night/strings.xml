@@ -39,4 +39,5 @@
     <string name="permission_require">Permission Location required</string>
     <string name="rider_not_found">Riders not found</string>
     <string name="key_not_found">Key Rider not found</string>
+    <string name="phone">+910000000000</string>
 </resources>

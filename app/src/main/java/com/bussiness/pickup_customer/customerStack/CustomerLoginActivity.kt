@@ -309,6 +309,7 @@ class CustomerLoginActivity : AppCompatActivity() {
         val edtLastName = binding.lastName
         val edtPhone = binding.txtPhone
         val btnContinue = binding.continueTag
+        val edtEmail = binding.email
         // Use libphonenumber to parse the phone number
 
         val phoneNumberUtil = PhoneNumberUtil.getInstance()
@@ -340,6 +341,7 @@ class CustomerLoginActivity : AppCompatActivity() {
             val firstName = edtFirstName.text.toString().trim()
             val lastName = edtLastName.text.toString().trim()
             val phoneNumber = edtPhone.text.toString().trim()
+            val emailAddress = edtEmail.text.toString().trim()
             val fullPhoneNumber = "+${binding.ccp2.selectedCountryCode}${phoneNumber}"
 
             when {
@@ -366,6 +368,7 @@ class CustomerLoginActivity : AppCompatActivity() {
                         this.firstName = firstName
                         this.lastName = lastName
                         this.phoneNumber = fullPhoneNumber
+                        this.email = emailAddress
                         this.role = "customer"
                     }
 

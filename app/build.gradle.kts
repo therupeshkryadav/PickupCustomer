@@ -79,4 +79,8 @@ dependencies {
     implementation(libs.rxjava)
     implementation(libs.rxandroid)
     implementation(libs.libphonenumber)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.rxjava3.adapter)
+    implementation(libs.retrofit.converter.scalars)
+    implementation(libs.retrofit.converter.gson)
 }
