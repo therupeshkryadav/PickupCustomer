@@ -8,7 +8,6 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
-import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
@@ -17,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.RelativeLayout
+import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -34,6 +34,7 @@ import com.bussiness.pickup_customer.databinding.FragmentHomeCustomerBinding
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
 import com.firebase.geofire.GeoQueryEventListener
+import com.google.android.gms.common.api.Status
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -49,6 +50,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.widget.AutocompleteSupportFragment
+import com.google.android.libraries.places.widget.listener.PlaceSelectionListener
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
@@ -61,12 +66,14 @@ import com.karumi.dexter.listener.PermissionDeniedResponse
 import com.karumi.dexter.listener.PermissionGrantedResponse
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.single.PermissionListener
+import com.sothree.slidinguppanel.SlidingUpPanelLayout
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.json.JSONObject
 import java.io.IOException
+import java.util.Arrays
 import java.util.Locale
 
 class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
@@ -74,6 +81,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
     private lateinit var mMap: GoogleMap
     private var _binding: FragmentHomeCustomerBinding? = null
     private lateinit var mapFragment: SupportMapFragment
+
+    private lateinit var slidingUpPaneLayout: SlidingUpPanelLayout
+    private lateinit var txt_welcome: TextView
+    private lateinit var autocompleteSupportFragment: AutocompleteSupportFragment
 
     //Location
     private lateinit var locationRequest: LocationRequest
@@ -127,13 +138,41 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
 
         init()
 
+        initViews(root)
+
         mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
         return root
     }
 
+    private fun initViews(root: View?) {
+        slidingUpPaneLayout = root!!.findViewById(R.id.activity_main) as SlidingUpPanelLayout
+        txt_welcome = root!!.findViewById(R.id.txt_welcome) as TextView
+
+        CustomerCommon.setWelcomeMessage(txt_welcome)
+    }
+
     @SuppressLint("VisibleForTests")
     private fun init() {
+
+        Places.initialize(requireContext(),getString(R.string.google_map_key))
+        autocompleteSupportFragment = childFragmentManager.findFragmentById(R.id.autocomplete_fragment) as AutocompleteSupportFragment
+        autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID,
+            Place.Field.ADDRESS,
+            Place.Field.LAT_LNG,
+            Place.Field.NAME))
+        autocompleteSupportFragment.setOnPlaceSelectedListener(object : PlaceSelectionListener{
+
+            override fun onPlaceSelected(p0: Place) {
+                Snackbar.make(requireView(),""+p0.latLng!!,Snackbar.LENGTH_LONG).show()
+            }
+
+            override fun onError(p0: Status) {
+                Snackbar.make(requireView(),p0.statusMessage!!,Snackbar.LENGTH_LONG).show()
+            }
+
+
+        })
 
         iGoogleAPI = RetrofitClient.instance!!.create(IGoogleAPI::class.java)
 
@@ -161,6 +200,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                 if (firstTime) {
                     previousLocation = locationResult.lastLocation
                     currentLocation = locationResult.lastLocation
+
+                    setRestrictPlacesInCountry(locationResult!!.lastLocation)
 
                     firstTime = false
                 } else {
@@ -196,6 +237,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
 
     }
 
+    private fun setRestrictPlacesInCountry(location: Location?) {
+        try {
+            //Load all riders in city
+            val geocoder = Geocoder(requireContext(), Locale.getDefault())
+            var addressList: List<Address> = geocoder.getFromLocation(location!!.latitude, location!!.longitude, 1)!!
+            if (addressList.size > 0)
+                autocompleteSupportFragment.setCountry(addressList[0].countryCode)
+        }catch (e: IOException){
+            e.printStackTrace()
+        }
+    }
+
     private fun loadAvailableRiders() {
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
@@ -224,106 +277,112 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                 try {
                     addressList =
                         geocoder.getFromLocation(location.latitude, location.longitude, 1)!!
-                    cityName = addressList[0].locality
+                    if(addressList.size > 0)
+                        cityName = addressList[0].locality
 
                     //Query
-                    val rider_location_ref = FirebaseDatabase.getInstance()
-                        .getReference(CustomerCommon.RIDER_LOCATION_REFERENCE)
-                        .child(cityName)
-                    val gf = GeoFire(rider_location_ref)
-                    val geoQuery = gf.queryAtLocation(
-                        GeoLocation(location.latitude, location.longitude),
-                        distance
-                    )
-                    geoQuery.removeAllListeners()
+                    if(!TextUtils.isEmpty(cityName)) {
+                        val rider_location_ref = FirebaseDatabase.getInstance()
+                            .getReference(CustomerCommon.RIDER_LOCATION_REFERENCE)
+                            .child(cityName)
+                        val gf = GeoFire(rider_location_ref)
+                        val geoQuery = gf.queryAtLocation(
+                            GeoLocation(location.latitude, location.longitude),
+                            distance
+                        )
+                        geoQuery.removeAllListeners()
 
-                    geoQuery.addGeoQueryEventListener(object : GeoQueryEventListener {
-                        override fun onGeoQueryReady() {
-                            if (distance <= LIMIT_RANGE) {
-                                distance++
-                                loadAvailableRiders()
-                            } else {
-                                distance = 0.0
-                                addRiderMarker()
+                        geoQuery.addGeoQueryEventListener(object : GeoQueryEventListener {
+                            override fun onGeoQueryReady() {
+                                if (distance <= LIMIT_RANGE) {
+                                    distance++
+                                    loadAvailableRiders()
+                                } else {
+                                    distance = 0.0
+                                    addRiderMarker()
+                                }
                             }
-                        }
 
-                        override fun onKeyEntered(key: String?, location: GeoLocation?) {
-                            Log.d("RiderMarker", "Key entered: $key at location: $location")
-                            if (key != null && location != null) {
-                                CustomerCommon.ridersFound.add(RiderGeoModel(key, location))
-                                Log.d(
-                                    "RiderMarker",
-                                    "${
-                                        CustomerCommon.ridersFound.add(
-                                            RiderGeoModel(
-                                                key,
-                                                location
+                            override fun onKeyEntered(key: String?, location: GeoLocation?) {
+                                Log.d("RiderMarker", "Key entered: $key at location: $location")
+                                if (key != null && location != null) {
+                                    CustomerCommon.ridersFound.add(RiderGeoModel(key, location))
+                                    Log.d(
+                                        "RiderMarker",
+                                        "${
+                                            CustomerCommon.ridersFound.add(
+                                                RiderGeoModel(
+                                                    key,
+                                                    location
+                                                )
                                             )
-                                        )
-                                    }"
-                                )
+                                        }"
+                                    )
+                                }
                             }
-                        }
 
-                        override fun onKeyMoved(key: String?, location: GeoLocation?) {
+                            override fun onKeyMoved(key: String?, location: GeoLocation?) {
 
-                        }
+                            }
 
-                        override fun onKeyExited(key: String?) {
+                            override fun onKeyExited(key: String?) {
 
-                        }
+                            }
 
-                        override fun onGeoQueryError(error: DatabaseError?) {
-                            Snackbar.make(requireView(), error!!.message, Snackbar.LENGTH_SHORT)
-                                .show()
-                        }
+                            override fun onGeoQueryError(error: DatabaseError?) {
+                                Snackbar.make(requireView(), error!!.message, Snackbar.LENGTH_SHORT)
+                                    .show()
+                            }
 
-                    })
+                        })
 
-                    rider_location_ref.addChildEventListener(object : ChildEventListener {
+                        rider_location_ref.addChildEventListener(object : ChildEventListener {
 
-                        override fun onCancelled(error: DatabaseError) {
-                            Snackbar.make(requireView(), error.message, Snackbar.LENGTH_SHORT)
-                                .show()
-                        }
+                            override fun onCancelled(error: DatabaseError) {
+                                Snackbar.make(requireView(), error.message, Snackbar.LENGTH_SHORT)
+                                    .show()
+                            }
 
-                        override fun onChildMoved(
-                            snapshot: DataSnapshot,
-                            previousChildName: String?
-                        ) {
+                            override fun onChildMoved(
+                                snapshot: DataSnapshot,
+                                previousChildName: String?
+                            ) {
 
-                        }
+                            }
 
-                        override fun onChildChanged(
-                            snapshot: DataSnapshot,
-                            previousChildName: String?
-                        ) {
+                            override fun onChildChanged(
+                                snapshot: DataSnapshot,
+                                previousChildName: String?
+                            ) {
 
-                        }
+                            }
 
-                        override fun onChildAdded(
-                            snapshot: DataSnapshot,
-                            previousChildName: String?
-                        ) {
-                            //Have new rider
-                            val geoQueryModel = snapshot.getValue(GeoQueryModel::class.java)
-                            val geoLocation =
-                                GeoLocation(geoQueryModel!!.l!![0], geoQueryModel!!.l!![1])
-                            val riderGeoModel = RiderGeoModel(snapshot.key, geoLocation)
-                            val newRiderLocation = Location("")
-                            newRiderLocation.latitude = geoLocation.latitude
-                            newRiderLocation.longitude = geoLocation.longitude
-                            val newDistance = location.distanceTo(newRiderLocation) / 1000 //in km
-                            if (newDistance <= LIMIT_RANGE)
-                                findRiderByKey(riderGeoModel)
-                        }
+                            override fun onChildAdded(
+                                snapshot: DataSnapshot,
+                                previousChildName: String?
+                            ) {
+                                //Have new rider
+                                val geoQueryModel = snapshot.getValue(GeoQueryModel::class.java)
+                                val geoLocation =
+                                    GeoLocation(geoQueryModel!!.l!![0], geoQueryModel!!.l!![1])
+                                val riderGeoModel = RiderGeoModel(snapshot.key, geoLocation)
+                                val newRiderLocation = Location("")
+                                newRiderLocation.latitude = geoLocation.latitude
+                                newRiderLocation.longitude = geoLocation.longitude
+                                val newDistance =
+                                    location.distanceTo(newRiderLocation) / 1000 //in km
+                                if (newDistance <= LIMIT_RANGE)
+                                    findRiderByKey(riderGeoModel)
+                            }
 
-                        override fun onChildRemoved(snapshot: DataSnapshot) {
+                            override fun onChildRemoved(snapshot: DataSnapshot) {
 
-                        }
+                            }
 
-                    })
+                        })
+                    }
+                    else
+                        Snackbar.make(requireView(), getString(R.string.city_not_found), Snackbar.LENGTH_SHORT).show()
 
                 } catch (e: IOException) {
                     Snackbar.make(

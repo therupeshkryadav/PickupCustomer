@@ -39,4 +39,9 @@
     <string name="rider_not_found">Riders not found</string>
     <string name="key_not_found">Key Rider not found</string>
     <string name="phone">+910000000000</string>
+    <string name="google_map_key" templateMergeStrategy="preserve" translatable="false">AIzaSyB9lceZqjvk4sjccnC0pX60Lgp2-YK_jDA</string>
+    <string name="good_afternoon">Good afternoon</string>
+    <string name="choose_a_saved_place">Choose a Saved Place</string>
+    <string name="city_not_found">City name not found</string>
+    <string name="add_location">Add location</string>
 </resources>

@@ -11,6 +11,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
+import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import com.bussiness.pickup_customer.R
 import com.bussiness.pickup_customer.customerStack.customerModel.AnimationModel
@@ -18,6 +19,7 @@ import com.bussiness.pickup_customer.customerStack.customerModel.CustomerInfoMod
 import com.bussiness.pickup_customer.customerStack.customerModel.RiderGeoModel
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
+import java.util.Calendar
 import kotlin.math.abs
 import kotlin.math.atan
 
@@ -142,6 +144,16 @@ object CustomerCommon {
             atan(lng / lat)
         )) + 270).toFloat()
         return (-1).toFloat()
+    }
+
+    fun setWelcomeMessage(txtWelcome: TextView) {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        if(hour >= 1 && hour <= 12)
+            txtWelcome.setText(java.lang.StringBuilder("Good morning."))
+        else if(hour > 12 && hour <= 17)
+            txtWelcome.setText(java.lang.StringBuilder("Good afternoon."))
+        else
+            txtWelcome.setText(java.lang.StringBuilder("Good evening."))
     }
 
 }
