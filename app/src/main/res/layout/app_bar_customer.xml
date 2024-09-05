@@ -4,21 +4,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="com.bussiness.pickup_customer.customerStack.CustomerActivity">
+    android:layout_height="match_parent">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        >
+        android:layout_height="wrap_content">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorAccent"
-            app:popupTheme="@style/Theme.PickUpCustomer.PopupOverlay"
-            />
+            app:popupTheme="@style/Theme.PickUpCustomer.PopupOverlay" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -30,6 +27,10 @@
         tools:layout="@layout/fragment_home_customer" /> <!-- Placeholder layout for preview -->
 
     <!-- Include your content layout -->
-    <include layout="@layout/content_customer" />
+    <include
+        android:id="@+id/contentCustomer"
+        layout="@layout/content_customer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

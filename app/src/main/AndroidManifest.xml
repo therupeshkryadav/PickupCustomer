@@ -32,11 +32,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB9lceZqjvk4sjccnC0pX60Lgp2-YK_jDA" />
         <activity
-            android:name=".customerStack.CustomerActivity"
+            android:name="com.bussiness.pickup_customer.customerStack.CustomerActivity"
             android:exported="false"
             android:theme="@style/Theme.PickUpCustomer.NoActionBar" />
         <activity
-            android:name=".customerStack.CustomerLoginActivity"
+            android:name="com.bussiness.pickup_customer.customerStack.CustomerLoginActivity"
             android:exported="false" />
         <activity
             android:name="com.bussiness.pickup_customer.ChoiceActivity"

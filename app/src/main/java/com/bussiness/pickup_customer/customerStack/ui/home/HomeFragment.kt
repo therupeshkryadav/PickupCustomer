@@ -138,18 +138,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
 
         init()
 
-        initViews(root)
+        initViews(root, binding)
 
         mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
         return root
     }
 
-    private fun initViews(root: View?) {
-        slidingUpPaneLayout = root!!.findViewById(R.id.activity_main) as SlidingUpPanelLayout
-        txt_welcome = root!!.findViewById(R.id.txt_welcome) as TextView
+    private fun initViews(root: View?, binding: FragmentHomeCustomerBinding) {
+        slidingUpPaneLayout =  binding.slidingLayout
+//        txt_welcome = root!!.findViewById(R.id.txt_welcome) as TextView
 
-        CustomerCommon.setWelcomeMessage(txt_welcome)
+//        CustomerCommon.setWelcomeMessage(txt_welcome)
     }
 
     @SuppressLint("VisibleForTests")

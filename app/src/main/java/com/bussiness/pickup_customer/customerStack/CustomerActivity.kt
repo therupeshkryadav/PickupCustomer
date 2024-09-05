@@ -51,7 +51,6 @@ class CustomerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityCustomerBinding.inflate(layoutInflater)
         // Remove the title bar
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -59,18 +58,18 @@ class CustomerActivity : AppCompatActivity() {
 
         firebaseAuth = FirebaseAuth.getInstance()
 
-        setSupportActionBar(binding.appBarNavigation.toolbar)
+//        setSupportActionBar(binding.appBarNavigation.toolbar)
+        // to make the Navigation drawer icon always appear on the action bar
+         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         drawerLayout = binding.drawerLayout
         navView = binding.navView
 
         // Ensure the view is fully created before accessing NavController
-        binding.root.post {
+        binding.root.apply {
             try {
                 navController = findNavController(R.id.nav_host_fragment_content_customer)
-                appBarConfiguration = AppBarConfiguration(
-                    setOf(R.id.nav_home), drawerLayout
-                )
+                appBarConfiguration = AppBarConfiguration(setOf(R.id.nav_home), drawerLayout)
                 setupActionBarWithNavController(navController, appBarConfiguration)
                 navView.setupWithNavController(navController)
                 init()
