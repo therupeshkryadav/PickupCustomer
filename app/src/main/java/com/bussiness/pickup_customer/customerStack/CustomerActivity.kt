@@ -110,8 +110,7 @@ class CustomerActivity : AppCompatActivity() {
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 @SuppressLint("SetTextI18n")
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        val model = snapshot.getValue(CustomerInfoModel::class.java)
+                    if (snapshot.exists()) { val model = snapshot.getValue(CustomerInfoModel::class.java)
                         println("FIREBASE_USER => $model")
 
                         model?.let {
