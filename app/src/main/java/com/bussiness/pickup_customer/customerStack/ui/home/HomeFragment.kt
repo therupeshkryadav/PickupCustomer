@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
@@ -54,6 +55,7 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
@@ -82,7 +84,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
     private var _binding: FragmentHomeCustomerBinding? = null
     private lateinit var mapFragment: SupportMapFragment
 
-    private lateinit var slidingUpPaneLayout: SlidingUpPanelLayout
+    private lateinit var bottomSheetBehavior: BottomSheetBehavior<LinearLayout>
     private lateinit var txt_welcome: TextView
     private lateinit var autocompleteSupportFragment: AutocompleteSupportFragment
 
@@ -137,42 +139,42 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
         val root: View = binding.root
 
         init()
+//        initViews(root, binding)
 
-        initViews(root, binding)
-
+        // Initialize map fragment
         mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
         return root
     }
 
-    private fun initViews(root: View?, binding: FragmentHomeCustomerBinding) {
-        slidingUpPaneLayout =  binding.activityMain
-        txt_welcome = root!!.findViewById(R.id.txt_welcome) as TextView
+//    private fun initViews(root: View, binding: FragmentHomeCustomerBinding) {
+//
+//        CustomerCommon.setWelcomeMessage(txt_welcome)
+//    }
 
-        CustomerCommon.setWelcomeMessage(txt_welcome)
-    }
 
     @SuppressLint("VisibleForTests")
     private fun init() {
 
         Places.initialize(requireContext(),getString(R.string.google_map_key))
-        autocompleteSupportFragment = childFragmentManager.findFragmentById(R.id.autocomplete_fragment) as AutocompleteSupportFragment
-        autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID,
-            Place.Field.ADDRESS,
-            Place.Field.LAT_LNG,
-            Place.Field.NAME))
-        autocompleteSupportFragment.setOnPlaceSelectedListener(object : PlaceSelectionListener{
-
-            override fun onPlaceSelected(p0: Place) {
-                Snackbar.make(requireView(),""+p0.latLng!!,Snackbar.LENGTH_LONG).show()
-            }
-
-            override fun onError(p0: Status) {
-                Snackbar.make(requireView(),p0.statusMessage!!,Snackbar.LENGTH_LONG).show()
-            }
-
-
-        })
+//        autocompleteSupportFragment = childFragmentManager.findFragmentById(R.id.autocomplete_fragment) as AutocompleteSupportFragment
+//        autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID,
+//            Place.Field.ADDRESS,
+//            Place.Field.LAT_LNG,
+//            Place.Field.NAME))
+//        autocompleteSupportFragment.setOnPlaceSelectedListener(object : PlaceSelectionListener{
+//
+//            override fun onPlaceSelected(p0: Place) {
+//                Snackbar.make(requireView(),""+p0.latLng!!,Snackbar.LENGTH_LONG).show()
+//            }
+//
+//            override fun onError(p0: Status) {
+//                Snackbar.make(requireView(),p0.statusMessage!!,Snackbar.LENGTH_LONG).show()
+//            }
+//
+//
+//        })
 
         iGoogleAPI = RetrofitClient.instance!!.create(IGoogleAPI::class.java)
 
@@ -242,8 +244,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
             //Load all riders in city
             val geocoder = Geocoder(requireContext(), Locale.getDefault())
             var addressList: List<Address> = geocoder.getFromLocation(location!!.latitude, location!!.longitude, 1)!!
-            if (addressList.size > 0)
-                autocompleteSupportFragment.setCountry(addressList[0].countryCode)
+//            if (addressList.size > 0)
+////                autocompleteSupportFragment.setCountry(addressList[0].countryCode)
         }catch (e: IOException){
             e.printStackTrace()
         }

@@ -66,7 +66,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 retrofit-rxjava3-adapter = { module = "com.squareup.retrofit2:adapter-rxjava3", version.ref = "retrofit" }
 retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "scalars" }
 retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "gson" }
-slidingup-panel = {module = "com.sothree.slidinguppanel:library", version.ref="sothree"}
+slidingup-panel = { module = "com.sothree.slidinguppanel:library", version.ref = "sothree" }
 google-places = { group = "com.google.android.libraries.places", name = "places", version.ref = "google_places" }
 
 

@@ -60,7 +60,7 @@ class CustomerActivity : AppCompatActivity() {
 
 //        setSupportActionBar(binding.appBarNavigation.toolbar)
         // to make the Navigation drawer icon always appear on the action bar
-         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        setSupportActionBar(binding.appBarNavigation.toolbar)
 
         drawerLayout = binding.drawerLayout
         navView = binding.navView
@@ -68,7 +68,7 @@ class CustomerActivity : AppCompatActivity() {
         // Ensure the view is fully created before accessing NavController
         binding.root.apply {
             try {
-                navController = findNavController(R.id.nav_host_fragment_content_customer)
+                navController = findNavController(R.id.nav_host_fragment_content_navigation)
                 appBarConfiguration = AppBarConfiguration(setOf(R.id.nav_home), drawerLayout)
                 setupActionBarWithNavController(navController, appBarConfiguration)
                 navView.setupWithNavController(navController)
