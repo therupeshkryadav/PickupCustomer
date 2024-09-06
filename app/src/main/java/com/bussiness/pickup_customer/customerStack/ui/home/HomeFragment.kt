@@ -80,6 +80,7 @@ import java.util.Locale
 
 class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
 
+    private lateinit var slidingUpPaneLayout: SlidingUpPanelLayout
     private lateinit var mMap: GoogleMap
     private var _binding: FragmentHomeCustomerBinding? = null
     private lateinit var mapFragment: SupportMapFragment
@@ -139,16 +140,19 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
         val root: View = binding.root
 
         init()
+
 //        initViews(root, binding)
 
-        // Initialize map fragment
         mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-
         return root
     }
 
-//    private fun initViews(root: View, binding: FragmentHomeCustomerBinding) {
+//    private fun initViews(root: View?, binding: FragmentHomeCustomerBinding) {
+//        slidingUpPaneLayout =  binding.activityMain
+//        slidingUpPaneLayout.panelState = SlidingUpPanelLayout.PanelState.COLLAPSED // Set initial state
+//
+//        txt_welcome = binding.txtWelcome
 //
 //        CustomerCommon.setWelcomeMessage(txt_welcome)
 //    }
@@ -278,7 +282,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                 var addressList: List<Address> = ArrayList()
                 try {
                     addressList =
-                        geocoder.getFromLocation(location.latitude, location.longitude, 1)!!
+                        geocoder.getFromLocation(location!!.latitude, location!!.longitude, 1)!!
                     if(addressList.size > 0)
                         cityName = addressList[0].locality
 
