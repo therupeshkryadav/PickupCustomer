@@ -173,8 +173,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                 Snackbar.make(requireView(),""+p0.latLng!!,Snackbar.LENGTH_LONG).show()
             }
 
-            override fun onError(p0: Status) {
-                Snackbar.make(requireView(),p0.statusMessage!!,Snackbar.LENGTH_LONG).show()
+            override fun onError(status: Status?) {
+                status?.let {
+                    Log.e("AutocompleteError", "An error occurred: ${it.statusMessage}")
+                } ?: run {
+                    Log.e("AutocompleteError", "Status is null")
+                }
             }
 
 
