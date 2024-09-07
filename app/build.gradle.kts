@@ -82,6 +82,6 @@ dependencies {
     implementation(libs.retrofit.rxjava3.adapter)
     implementation(libs.retrofit.converter.scalars)
     implementation(libs.retrofit.converter.gson)
-    implementation(libs.slidingup.panel)
+    implementation(libs.slidinguppanel)
     implementation(libs.google.places)
 }

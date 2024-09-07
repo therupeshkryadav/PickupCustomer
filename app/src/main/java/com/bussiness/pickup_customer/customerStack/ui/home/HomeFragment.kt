@@ -136,49 +136,49 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
     ): View {
         val homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
 
-        _binding = FragmentHomeCustomerBinding.inflate(inflater, container, false)
+        _binding =FragmentHomeCustomerBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         init()
 
-//        initViews(root, binding)
+        initViews(root, binding)
 
         mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
         return root
     }
 
-//    private fun initViews(root: View?, binding: FragmentHomeCustomerBinding) {
-//        slidingUpPaneLayout =  binding.activityMain
-//        slidingUpPaneLayout.panelState = SlidingUpPanelLayout.PanelState.COLLAPSED // Set initial state
-//
-//        txt_welcome = binding.txtWelcome
-//
-//        CustomerCommon.setWelcomeMessage(txt_welcome)
-//    }
+    private fun initViews(root: View?, binding: FragmentHomeCustomerBinding) {
+        slidingUpPaneLayout =  binding.activityMain
+        slidingUpPaneLayout.panelState = SlidingUpPanelLayout.PanelState.COLLAPSED // Set initial state
+
+        txt_welcome = binding.txtWelcome
+
+        CustomerCommon.setWelcomeMessage(txt_welcome)
+    }
 
 
     @SuppressLint("VisibleForTests")
     private fun init() {
 
         Places.initialize(requireContext(),getString(R.string.google_map_key))
-//        autocompleteSupportFragment = childFragmentManager.findFragmentById(R.id.autocomplete_fragment) as AutocompleteSupportFragment
-//        autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID,
-//            Place.Field.ADDRESS,
-//            Place.Field.LAT_LNG,
-//            Place.Field.NAME))
-//        autocompleteSupportFragment.setOnPlaceSelectedListener(object : PlaceSelectionListener{
-//
-//            override fun onPlaceSelected(p0: Place) {
-//                Snackbar.make(requireView(),""+p0.latLng!!,Snackbar.LENGTH_LONG).show()
-//            }
-//
-//            override fun onError(p0: Status) {
-//                Snackbar.make(requireView(),p0.statusMessage!!,Snackbar.LENGTH_LONG).show()
-//            }
-//
-//
-//        })
+        autocompleteSupportFragment = childFragmentManager.findFragmentById(R.id.autocomplete_fragment) as AutocompleteSupportFragment
+        autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID,
+            Place.Field.ADDRESS,
+            Place.Field.LAT_LNG,
+            Place.Field.NAME))
+        autocompleteSupportFragment.setOnPlaceSelectedListener(object : PlaceSelectionListener{
+
+            override fun onPlaceSelected(p0: Place) {
+                Snackbar.make(requireView(),""+p0.latLng!!,Snackbar.LENGTH_LONG).show()
+            }
+
+            override fun onError(p0: Status) {
+                Snackbar.make(requireView(),p0.statusMessage!!,Snackbar.LENGTH_LONG).show()
+            }
+
+
+        })
 
         iGoogleAPI = RetrofitClient.instance!!.create(IGoogleAPI::class.java)
 
@@ -248,8 +248,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
             //Load all riders in city
             val geocoder = Geocoder(requireContext(), Locale.getDefault())
             var addressList: List<Address> = geocoder.getFromLocation(location!!.latitude, location!!.longitude, 1)!!
-//            if (addressList.size > 0)
-////                autocompleteSupportFragment.setCountry(addressList[0].countryCode)
+            if (addressList.size > 0)
+                autocompleteSupportFragment.setCountry(addressList[0].countryCode)
         }catch (e: IOException){
             e.printStackTrace()
         }
@@ -511,7 +511,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, FirebaseRiderInfoListener {
                     p0: PermissionRequest?,
                     p1: PermissionToken?
                 ) {
-                    TODO("Not yet implemented")
+
                 }
 
                 override fun onPermissionDenied(p0: PermissionDeniedResponse?) {
